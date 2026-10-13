@@ -58,6 +58,20 @@ make DESIGN_CONFIG=./designs/nangate45/matmul_unrolled/config.mk
 5. Reusable framework for accelerator exploration
 
 ------------------------------
+## PPA Report Analyzer
+
+A standard-library Python utility summarizes metrics already present in the OpenROAD reports and can export CSV/JSON. It does not run the physical-design flow.
+
+```bash
+python scripts/ppa_report.py --reports-dir reports
+python scripts/ppa_report.py --reports-dir reports --csv-out out/ppa-summary.csv --json-out out/ppa-summary.json
+python -m unittest discover -s tests -v
+```
+
+See [the analyzer documentation](docs/ppa-report-analyzer.md) for metric sources, limitations, and interpretation notes.
+
+---
+
 ## Results
 
  ##  Repository Artifacts
