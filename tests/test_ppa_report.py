@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.ppa_report import discover_reports, parse_report, write_csv, write_json  # noqa: E402
 
 
-REPORT_TEXT = """\\
+REPORT_TEXT = """\
 ==========================================================================
 finish report_tns
 --------------------------------------------------------------------------
@@ -38,7 +38,7 @@ finish report_power
 --------------------------------------------------------------------------
 Group                  Internal  Switching    Leakage      Total
                            Power      Power      Power      Power (Watts)
-----------------------------------------------------------------
+--------------------------------------------------------------------------
 Sequential             6.72e-04   1.22e-04   1.65e-05   8.10e-04   5.8%
 Combinational          6.79e-03   5.99e-03   1.59e-04   1.29e-02  93.1%
 Clock                  5.20e-05   9.86e-05   1.09e-06   1.52e-04   1.1%
@@ -60,7 +60,7 @@ class PpaReportTests(unittest.TestCase):
         report = self.design_dir / "6_finish.rpt"
         report.write_text(REPORT_TEXT, encoding="utf-8")
         (self.design_dir / "synth_stat.txt").write_text(
-            "Chip area for module '\\\\matmul_systolic': 8694.476000\\n",
+            "Chip area for module '\\matmul_systolic': 8694.476000\n",
             encoding="utf-8",
         )
 
@@ -94,7 +94,7 @@ Total 0 0 0 1e999 100.0%
             encoding="utf-8",
         )
         (self.design_dir / "synth_stat.txt").write_text(
-            "Chip area for module '\\\\matmul_systolic': 1e999\\n",
+            "Chip area for module '\\matmul_systolic': 1e999\n",
             encoding="utf-8",
         )
 
@@ -117,7 +117,7 @@ Total 0 0 0 1e999 100.0%
 
     def test_missing_metrics_are_not_reported_as_zero(self):
         report = self.design_dir / "6_finish.rpt"
-        report.write_text("OpenROAD report with no recognized metric sections\\n", encoding="utf-8")
+        report.write_text("OpenROAD report with no recognized metric sections\n", encoding="utf-8")
 
         result = parse_report(report)
 
@@ -127,10 +127,10 @@ Total 0 0 0 1e999 100.0%
         self.assertIsNone(result["total_power_w"])
 
     def test_discovery_is_sorted_and_fails_for_empty_directory(self):
-        (self.design_dir / "6_finish.rpt").write_text("wns max 0.00\\n", encoding="utf-8")
+        (self.design_dir / "6_finish.rpt").write_text("wns max 0.00\n", encoding="utf-8")
         other_dir = self.root / "matmul_unrolled"
         other_dir.mkdir()
-        (other_dir / "6_finish.rpt").write_text("wns max 0.00\\n", encoding="utf-8")
+        (other_dir / "6_finish.rpt").write_text("wns max 0.00\n", encoding="utf-8")
 
         reports = discover_reports(self.root)
 
