@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -58,9 +59,15 @@ CSV_FIELDS = [
 METRIC_FIELDS = CSV_FIELDS[2:]
 
 
+def _finite_float(value: str) -> Optional[float]:
+    """Convert a matched numeric token, treating overflow as unavailable."""
+    parsed = float(value)
+    return parsed if math.isfinite(parsed) else None
+
+
 def _first_float(pattern: re.Pattern[str], text: str) -> Optional[float]:
     match = pattern.search(text)
-    return float(match.group(1)) if match else None
+    return _finite_float(match.group(1)) if match else None
 
 
 def parse_report(report_path: Path) -> Dict[str, Any]:
@@ -85,12 +92,14 @@ def parse_report(report_path: Path) -> Dict[str, Any]:
 
     clock_match = CLOCK_PATTERN.search(text)
     if clock_match:
-        row["min_period_ns"] = float(clock_match.group(1))
-        row["fmax_mhz"] = float(clock_match.group(2))
+        row["min_period_ns"] = _finite_float(clock_match.group(1))
+        row["fmax_mhz"] = _finite_float(clock_match.group(2))
 
     power_totals: Dict[str, float] = {}
     for match in POWER_ROW_PATTERN.finditer(text):
-        power_totals[match.group("group").lower()] = float(match.group("total"))
+        total = _finite_float(match.group("total"))
+        if total is not None:
+            power_totals[match.group("group").lower()] = total
 
     for group in ("sequential", "combinational", "clock", "total"):
         row[f"{group}_power_w"] = power_totals.get(group)

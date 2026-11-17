@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.ppa_report import discover_reports, parse_report, write_csv, write_json  # noqa: E402
 
 
-REPORT_TEXT = """\
+REPORT_TEXT = """\\
 ==========================================================================
 finish report_tns
 --------------------------------------------------------------------------
@@ -60,7 +60,7 @@ class PpaReportTests(unittest.TestCase):
         report = self.design_dir / "6_finish.rpt"
         report.write_text(REPORT_TEXT, encoding="utf-8")
         (self.design_dir / "synth_stat.txt").write_text(
-            "Chip area for module '\\matmul_systolic': 8694.476000\n",
+            "Chip area for module '\\\\matmul_systolic': 8694.476000\\n",
             encoding="utf-8",
         )
 
@@ -78,9 +78,46 @@ class PpaReportTests(unittest.TestCase):
         self.assertAlmostEqual(result["clock_power_w"], 1.52e-04)
         self.assertAlmostEqual(result["total_power_w"], 1.39e-02)
 
+    def test_overflowing_numeric_tokens_remain_unavailable(self):
+        report = self.design_dir / "6_finish.rpt"
+        report.write_text(
+            """tns max 1e999
+wns max 1e999
+worst slack max 1e999
+clk period_min = 1e999 fmax = 1e999
+Group Internal Switching Leakage Total
+Sequential 0 0 0 1e999 100.0%
+Combinational 0 0 0 1e999 100.0%
+Clock 0 0 0 1e999 100.0%
+Total 0 0 0 1e999 100.0%
+""",
+            encoding="utf-8",
+        )
+        (self.design_dir / "synth_stat.txt").write_text(
+            "Chip area for module '\\\\matmul_systolic': 1e999\\n",
+            encoding="utf-8",
+        )
+
+        result = parse_report(report)
+
+        for field in (
+            "wns_ns",
+            "tns_ns",
+            "worst_slack_ns",
+            "min_period_ns",
+            "fmax_mhz",
+            "synthesis_area_um2",
+            "sequential_power_w",
+            "combinational_power_w",
+            "clock_power_w",
+            "total_power_w",
+        ):
+            with self.subTest(field=field):
+                self.assertIsNone(result[field])
+
     def test_missing_metrics_are_not_reported_as_zero(self):
         report = self.design_dir / "6_finish.rpt"
-        report.write_text("OpenROAD report with no recognized metric sections\n", encoding="utf-8")
+        report.write_text("OpenROAD report with no recognized metric sections\\n", encoding="utf-8")
 
         result = parse_report(report)
 
@@ -90,10 +127,10 @@ class PpaReportTests(unittest.TestCase):
         self.assertIsNone(result["total_power_w"])
 
     def test_discovery_is_sorted_and_fails_for_empty_directory(self):
-        (self.design_dir / "6_finish.rpt").write_text("wns max 0.00\n", encoding="utf-8")
+        (self.design_dir / "6_finish.rpt").write_text("wns max 0.00\\n", encoding="utf-8")
         other_dir = self.root / "matmul_unrolled"
         other_dir.mkdir()
-        (other_dir / "6_finish.rpt").write_text("wns max 0.00\n", encoding="utf-8")
+        (other_dir / "6_finish.rpt").write_text("wns max 0.00\\n", encoding="utf-8")
 
         reports = discover_reports(self.root)
 
