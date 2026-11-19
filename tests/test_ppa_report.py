@@ -115,6 +115,42 @@ Total 0 0 0 1e999 100.0%
             with self.subTest(field=field):
                 self.assertIsNone(result[field])
 
+    def test_negative_physical_metrics_and_nonpositive_clock_values_are_unavailable(self):
+        report = self.design_dir / "6_finish.rpt"
+        report.write_text(
+            """tns max -0.50
+wns max -0.10
+worst slack max -0.10
+clk period_min = 0 fmax = -1
+Group Internal Switching Leakage Total
+Sequential 0 0 0 -0.01 10.0%
+Combinational 0 0 0 -0.02 20.0%
+Clock 0 0 0 -0.03 30.0%
+Total 0 0 0 -0.06 60.0%
+""",
+            encoding="utf-8",
+        )
+        (self.design_dir / "synth_stat.txt").write_text(
+            "Chip area for module '\\matmul_systolic': -12.5\n",
+            encoding="utf-8",
+        )
+
+        result = parse_report(report)
+
+        self.assertAlmostEqual(result["wns_ns"], -0.10)
+        self.assertAlmostEqual(result["tns_ns"], -0.50)
+        self.assertIsNone(result["min_period_ns"])
+        self.assertIsNone(result["fmax_mhz"])
+        self.assertIsNone(result["synthesis_area_um2"])
+        for field in (
+            "sequential_power_w",
+            "combinational_power_w",
+            "clock_power_w",
+            "total_power_w",
+        ):
+            with self.subTest(field=field):
+                self.assertIsNone(result[field])
+
     def test_missing_metrics_are_not_reported_as_zero(self):
         report = self.design_dir / "6_finish.rpt"
         report.write_text("OpenROAD report with no recognized metric sections\n", encoding="utf-8")

@@ -34,6 +34,8 @@ The analyzer searches recursively for `6_finish.rpt` files. If a report has a si
 
 Metrics that are absent stay unavailable: CSV cells are blank and JSON values are `null`. The console also prints a warning for missing fields rather than substituting zero.
 
+Non-finite values are unavailable. The analyzer also applies basic physical-domain checks: clock period and maximum frequency must be positive, while synthesis area and reported power totals must be non-negative. A malformed or out-of-domain value is emitted as unavailable rather than being presented as a valid measurement. Timing slack is allowed to be negative because negative slack is a meaningful timing violation.
+
 ## Interpretation notes
 
 - `synthesis_area_um2` is the area reported by synthesis statistics; do not label it as final routed area.

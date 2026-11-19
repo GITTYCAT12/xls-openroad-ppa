@@ -65,6 +65,18 @@ def _finite_float(value: str) -> Optional[float]:
     return parsed if math.isfinite(parsed) else None
 
 
+def _non_negative_float(value: str) -> Optional[float]:
+    """Return a finite non-negative metric, otherwise mark it unavailable."""
+    parsed = _finite_float(value)
+    return parsed if parsed is not None and parsed >= 0.0 else None
+
+
+def _positive_float(value: str) -> Optional[float]:
+    """Return a finite positive metric, otherwise mark it unavailable."""
+    parsed = _finite_float(value)
+    return parsed if parsed is not None and parsed > 0.0 else None
+
+
 def _first_float(pattern: re.Pattern[str], text: str) -> Optional[float]:
     match = pattern.search(text)
     return _finite_float(match.group(1)) if match else None
@@ -92,12 +104,12 @@ def parse_report(report_path: Path) -> Dict[str, Any]:
 
     clock_match = CLOCK_PATTERN.search(text)
     if clock_match:
-        row["min_period_ns"] = _finite_float(clock_match.group(1))
-        row["fmax_mhz"] = _finite_float(clock_match.group(2))
+        row["min_period_ns"] = _positive_float(clock_match.group(1))
+        row["fmax_mhz"] = _positive_float(clock_match.group(2))
 
     power_totals: Dict[str, float] = {}
     for match in POWER_ROW_PATTERN.finditer(text):
-        total = _finite_float(match.group("total"))
+        total = _non_negative_float(match.group("total"))
         if total is not None:
             power_totals[match.group("group").lower()] = total
 
@@ -108,6 +120,10 @@ def parse_report(report_path: Path) -> Dict[str, Any]:
     if synth_stat.is_file():
         synth_text = synth_stat.read_text(encoding="utf-8", errors="replace")
         row["synthesis_area_um2"] = _first_float(AREA_PATTERN, synth_text)
+        area_match = AREA_PATTERN.search(synth_text)
+        row["synthesis_area_um2"] = (
+            _non_negative_float(area_match.group(1)) if area_match else None
+        )
 
     return row
 
